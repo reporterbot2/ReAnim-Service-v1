@@ -1,4 +1,4 @@
--- Fixed ReAnimation GitHub Script (no offsets)
+-- Fixed ReAnimation GitHub Script with offsets
 
 local player = game.Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
@@ -6,11 +6,13 @@ local RunService = game:GetService("RunService")
 
 local limbNames = {"Left Arm","Right Arm","Left Leg","Right Leg"}
 local torso = character:WaitForChild("Torso")
+local offsets = {}
 local limbControllers = {}
 
--- Remove all Motor6Ds from torso connected to limbs
+-- Save offsets and remove Motor6Ds
 for _, obj in ipairs(torso:GetChildren()) do
 	if obj:IsA("Motor6D") and obj.Part1 and table.find(limbNames, obj.Part1.Name) then
+		offsets[obj.Part1.Name] = torso.CFrame:toObjectSpace(obj.Part1.CFrame)
 		obj:Destroy()
 	end
 end
@@ -19,9 +21,9 @@ end
 for _, limbName in ipairs(limbNames) do
 	local limb = character:FindFirstChild(limbName)
 	if limb then
-		-- Remove any remaining welds, Motor6Ds, attachments recursively
+		-- Remove any remaining welds or attachments recursively
 		for _, obj in ipairs(limb:GetDescendants()) do
-			if obj:IsA("Motor6D") or obj:IsA("Weld") or obj:IsA("Attachment") then
+			if obj:IsA("Weld") or obj:IsA("Attachment") or obj:IsA("Motor6D") then
 				obj:Destroy()
 			end
 		end
@@ -39,8 +41,8 @@ for _, limbName in ipairs(limbNames) do
 		bg.CFrame = limb.CFrame
 		bg.Parent = limb
 
-		-- Save controller
-		limbControllers[limbName] = {BV = bv, BG = bg}
+		-- Save controller + offset
+		limbControllers[limbName] = {BV = bv, BG = bg, Offset = offsets[limbName]}
 	end
 end
 
@@ -48,6 +50,8 @@ end
 function updateLimb(limbName, rotationCFrame, position)
 	local controller = limbControllers[limbName]
 	if controller and controller.BV and controller.BG then
+		-- Use saved offset if needed
+		local offsetCFrame = controller.Offset or CFrame.new()
 		-- Move limb toward target position
 		controller.BV.Velocity = (position - controller.BV.Parent.Position) * 20
 		-- Rotate limb
