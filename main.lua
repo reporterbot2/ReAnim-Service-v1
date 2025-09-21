@@ -1,4 +1,4 @@
--- Fixed ReAnimation GitHub Script
+-- Fixed ReAnimation GitHub Script (no offsets)
 
 local player = game.Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
@@ -8,11 +8,18 @@ local limbNames = {"Left Arm","Right Arm","Left Leg","Right Leg"}
 local torso = character:WaitForChild("Torso")
 local limbControllers = {}
 
+-- Remove all Motor6Ds from torso connected to limbs
+for _, obj in ipairs(torso:GetChildren()) do
+	if obj:IsA("Motor6D") and obj.Part1 and table.find(limbNames, obj.Part1.Name) then
+		obj:Destroy()
+	end
+end
+
 -- Setup limbs
 for _, limbName in ipairs(limbNames) do
 	local limb = character:FindFirstChild(limbName)
 	if limb then
-		-- Delete all Motor6Ds, Welds, Attachments recursively
+		-- Remove any remaining welds, Motor6Ds, attachments recursively
 		for _, obj in ipairs(limb:GetDescendants()) do
 			if obj:IsA("Motor6D") or obj:IsA("Weld") or obj:IsA("Attachment") then
 				obj:Destroy()
